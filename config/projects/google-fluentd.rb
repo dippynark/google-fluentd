@@ -32,6 +32,12 @@ dependency "version-manifest"
 case ohai["os"]
 when "linux"
   case ohai["platform_family"]
+  when "amazon"
+    if /^201/ =~ ohai["platform_version"]
+      package :rpm do
+        dist_tag ".amzn1"
+      end
+    end
   when "debian"
     runtime_dependency "lsb-base"
   when "rhel"
