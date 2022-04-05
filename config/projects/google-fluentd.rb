@@ -38,6 +38,8 @@ when "linux"
         dist_tag ".amzn1"
       end
     end
+    runtime_dependency "initscripts"
+    runtime_dependency "redhat-lsb-core"
   when "debian"
     runtime_dependency "lsb-base"
   when "rhel"
