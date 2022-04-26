@@ -13,13 +13,10 @@
 #  ARGUMENTS
 ##############################
 
-Param([string]$version = "")
-
-if ($version -eq "")
-{
-  Write-Output "No version set. Usage: .\generate_sdl_agent_exe.ps1 -version v1-4"
-  exit
-}
+Param(
+  [string]$version = (Get-Content "$PSScriptRoot\..\windows-installer\VERSION"),
+  [string]$localOutputGemDir
+)
 
 ##############################
 #  TRACING AND ERROR HANDLING
@@ -34,6 +31,8 @@ $ErrorActionPreference = 'Stop'
 
 # Just install into current directory for simplicity.
 $BASE_INSTALLER_DIR = [string](Get-Location)
+# Re-enable tracing.
+Set-PSDebug -Trace 1
 
 # The path of where ruby and all gems will be.  This is the portion that will be
 # packaged and zipped up.
@@ -117,6 +116,8 @@ $ProgressPreference = "silentlyContinue"
 Invoke-WebRequest "$RUBY_INSTALLER_LINK" -OutFile "$RUBY_INSTALLER" -UserAgent "curl/7.60.0"
 Invoke-WebRequest "$NSIS_INSTALLER_LINK" -OutFile "$NSIS_INSTALLER" -UserAgent "curl/7.60.0"
 Invoke-WebRequest "$NSIS_UNZU_INSTALLER_LINK" -OutFile "$NSIS_UNZU_ZIP" -UserAgent "curl/7.60.0"
+# Re-enable tracing.
+Set-PSDebug -Trace 1
 
 
 ##############################
@@ -151,9 +152,26 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 $gem_installer = $SRC_ROOT + '\bin\gem_installer'
 $core_gems_rb = $SRC_ROOT + '\core_gems.rb'
 $plugin_gems_rb = $SRC_ROOT + '\plugin_gems.rb'
-& $GEM_CMD install fluentd:1.7.4 --no-document
+# Pin ffi version until https://github.com/ffi/ffi/issues/868 is resolved.
+& $GEM_CMD install ffi:1.14.1 --no-document
+
+# Note: In order to update the Fluentd version, please update both here and also
+# the fluentd versions in
+# https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud/blob/master/fluent-plugin-google-cloud.gemspec
+# and
+# https://github.com/GoogleCloudPlatform/google-fluentd/blob/master/config/software/fluentd.rb
+& $GEM_CMD install fluentd:1.13.3 --no-document
 & $RUBY_EXE $gem_installer $core_gems_rb
 & $RUBY_EXE $gem_installer $plugin_gems_rb
+
+
+if ($localOutputGemDir -ne $null) {
+  Push-Location $localOutputGemDir
+  Get-ChildItem
+  & $GEM_CMD build fluent-plugin-google-cloud.gemspec
+  & $GEM_CMD install fluent-plugin-google-cloud*.gem --no-document
+  Pop-Location
+}
 
 ##############################
 #  STEP 4.1 - TEMPORARY HACK TO UPDATE RUBY FILE
@@ -173,14 +191,22 @@ $replacement = (Get-Content $replacement_file) -join("`r`n")
 
 
 ##############################
-#  STEP 5 - REMOVE UNNECESSARY FILES.
+#  STEP 5 - COPY NECESSARY DLL FILES.
 ##############################
+# Save the C++ runtime DLL to allow running gems with C++ native extensions
+# such as winevt_c.
+$libstd_cpp_dll = $RUBY_DEV_DIR + "\mingw32\bin\libstdc++-6.dll"
+cp $libstd_cpp_dll $SD_LOGGING_AGENT_DIR\bin
 
+
+##############################
+#  STEP 6 - REMOVE UNNECESSARY FILES.
+##############################
 rm -r -Force $RUBY_DEV_DIR
 
 
 ##############################
-#  STEP 6 - ZIP THE FILES.
+#  STEP 7 - ZIP THE FILES.
 ##############################
 
 rm -Force $STACKDRIVER_ZIP -ErrorAction Ignore
@@ -189,7 +215,7 @@ Add-Type -Assembly System.IO.Compression.FileSystem
 
 
 ##############################
-#  STEP 7 - INSTALL NSIS.
+#  STEP 8 - INSTALL NSIS.
 ##############################
 
 # Install NSIS and wait for it to finish.
@@ -203,7 +229,7 @@ cp $NSIS_UNZU_DLL $NSIS_UNICODE_PLUGIN_DIR
 
 
 ##############################
-#  STEP 8 - COMPILE THE NSIS SCRIPT.
+#  STEP 9 - COMPILE THE NSIS SCRIPT.
 ##############################
 
 & $NSIS_MAKE /DVERSION=$version $STACKDRIVER_NSI

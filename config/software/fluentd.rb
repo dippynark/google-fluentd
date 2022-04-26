@@ -1,6 +1,12 @@
 name "fluentd"
-# fluentd v1.7.4.
-default_version '9c577a78e69fb3bc1fc1faf0ef425091b9180987'
+
+# Note: In order to update the Fluentd version, please update both here and also the fluentd versions in
+# https://github.com/GoogleCloudPlatform/fluent-plugin-google-cloud/blob/master/fluent-plugin-google-cloud.gemspec
+# and
+# https://github.com/GoogleCloudPlatform/google-fluentd/blob/master/windows-installer/generate_sdl_agent_exe.ps1
+#
+# fluentd v1.13.3.
+default_version '12de3b5a260a174fe4a419036d6e2b2e18fe7497'
 
 dependency "ruby"
 #dependency "bundler"

@@ -1,9 +1,9 @@
-FROM opensuse/leap:15.1
+FROM amazonlinux:2016.09
 
-RUN zypper -n refresh \
- && zypper -n install \
+RUN yum -y install \
         # Needed for gpg2 and rvm installation.
         curl \
+        ca-certificates \
         # Needed for agent build.
         autoconf \
         bzip2 \
@@ -11,8 +11,9 @@ RUN zypper -n refresh \
         gcc-c++ \
         git \
         patch \
-        ruby \
         rpm-build \
+        rpm-sign \
+        ruby \
         which \
         zlib-devel \
  # RVM GPG keys.
@@ -24,6 +25,4 @@ RUN zypper -n refresh \
  && rm -f get-rvm-io.sh \
  # RVM requires running in a login shell.
  && /bin/bash -l -c "rvm requirements && rvm install 2.5.3 && gem install bundler --no-document && gem update" \
- # Pretend we're on SLES 15.
- && /bin/sed -i -e 's/VERSION="15.1"/VERSION="15-SP1"/' /etc/os-release \
- && zypper -n clean
+ && yum -y clean all

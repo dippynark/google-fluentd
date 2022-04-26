@@ -278,15 +278,16 @@ Section "Install"
     pristine --all --only-executables"
 
   ; Start the fluentd service and show status.
-  ;   '--reg-winsvc i'          -> Install as a windows service
-  ;   '--reg-winsvc-auto-start' -> Enables the service to auto start at boot
-  ;   '--reg-winsvc-fluentdopt' -> Passes along the config file
-  ;   '--winsvc-name'           -> The service name the agent will run as
-  ;   '--winsvc-display-name'   -> The display name of service
-  ;   '--winsvc-desc'           -> A description of the service
+  ;   '--reg-winsvc i'           -> Install as a windows service
+  ;   '--reg-winsvc-auto-start'  -> Set service to start automatically (at boot)
+  ;   '--reg-winsvc-delay-start' -> Delay auto-start until shortly after boot
+  ;   '--reg-winsvc-fluentdopt'  -> Pass along the config file
+  ;   '--winsvc-name'            -> The service name the agent will run as
+  ;   '--winsvc-display-name'    -> The display name of service
+  ;   '--winsvc-desc'            -> A description of the service
   ${Print} "Starting the ${DISPLAY_NAME}..."
   ${ExecuteCommand} "${MAIN_INSTDIR}\bin\fluentd.bat" \
-      "--reg-winsvc i --reg-winsvc-auto-start \
+      "--reg-winsvc i --reg-winsvc-auto-start --reg-winsvc-delay-start \
       --reg-winsvc-fluentdopt $\"-c $\'${FLUENTD_CONFIG_LOCATION}$\' -o $\'${FLUENTD_LOG_LOCATION}$\'$\" \
       --winsvc-name $\"${PRODUCT}Logging$\" \
       --winsvc-display-name $\"${PRODUCT} Logging$\" \

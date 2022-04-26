@@ -8,13 +8,13 @@ homepage "http://cloud.google.com/logging/docs/"
 description "Google Fluentd: A data collector for Google Cloud Logging"
 
 install_dir     "/opt/google-fluentd"
-build_version   "1.7.2"
+build_version   "1.9.8"
 build_iteration 1
 
 # creates required build directories
 dependency "preparation"
 
-override :ruby, :version => '2.6.5'
+override :ruby, :version => '2.6.9'
 override :zlib, :version => '1.2.8'
 override :rubygems, :version => '3.0.0'
 override :postgresql, :version => '9.3.5'
@@ -32,6 +32,14 @@ dependency "version-manifest"
 case ohai["os"]
 when "linux"
   case ohai["platform_family"]
+  when "amazon"
+    if /^201/ =~ ohai["platform_version"]
+      package :rpm do
+        dist_tag ".amzn1"
+      end
+    end
+    runtime_dependency "initscripts"
+    runtime_dependency "redhat-lsb-core"
   when "debian"
     runtime_dependency "lsb-base"
   when "rhel"
@@ -44,6 +52,8 @@ when "linux"
   when "suse"
     runtime_dependency "lsb-release"
     runtime_dependency "insserv-compat"
+    # sysvinit-tools is required for insserv-compat, but isn't a dependency
+    runtime_dependency "sysvinit-tools"
   end
 end
 
