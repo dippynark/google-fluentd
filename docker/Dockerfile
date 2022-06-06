@@ -1,4 +1,4 @@
-FROM debian:10.10-slim
+FROM debian:10.12-slim
 
 # Default google-fluentd to the latest stable.
 # Use `docker build --build-arg REPO_SUFFIX=<CUSTOM_REPO_SUFFIX>` to override
@@ -28,12 +28,13 @@ RUN apt-get update \
     # image cleanup.
     # ==> INSTALL_ADDITIONAL_GEMS_HERE_IF_NEEDED <==
     # Clean up to reduce image size.
-    && apt-get purge -y \
+    && apt-get purge -y --allow-remove-essential \
         curl \
         lsb-release \
         build-essential \
         gtk2.0 \
         libkrb5-3 \
+        gzip \
     && apt-get autoremove -y --purge \
     # Remove docs.
     && rm -rf \
@@ -81,6 +82,12 @@ RUN apt-get update \
     && find /var/log -name "*.log" -type f -delete \
     # Remove .c .cc .h files.
     && (find /opt/google-fluentd/embedded/ -name '*.c' -o -name '*.cc' -o -name '*.h'  | xargs rm) \
+    # Remove test directories containing sensitive data
+    && rm -r /opt/google-fluentd/embedded/lib/ruby/gems/2.6.0/gems/fluentd-1.11.5/test \
+        /opt/google-fluentd/embedded/lib/ruby/gems/2.6.0/gems/fluentd-1.13.3/test \
+        /opt/google-fluentd/embedded/lib/ruby/gems/2.6.0/gems/httpclient-2.8.3/test \
+        /opt/google-fluentd/embedded/lib/ruby/gems/2.6.0/gems/httpclient-2.8.3/sample \
+        /opt/google-fluentd/embedded/lib/ruby/gems/2.6.0/gems/grpc-1.45.0-x86_64-linux/src/ruby/spec/testdata \
     # Remove unused api client libraries.
     && (find /opt/google-fluentd/embedded/lib/ruby/gems/*/gems/google-api-client-*/generated/google/apis -mindepth 1 -maxdepth 1 \! -name 'logging*' | xargs rm -rf) \
     && sed -i "s/num_threads 8/num_threads 8\n  detect_json true\n  # Enable metadata agent lookups.\n  enable_metadata_agent true\n  metadata_agent_url \"http:\/\/local-metadata-agent.stackdriver.com:8000\"/" "/etc/google-fluentd/google-fluentd.conf"
